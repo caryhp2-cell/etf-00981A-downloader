@@ -7,3 +7,5 @@ venv/
 .DS_Store
 # 暫存的瀏覽器下載
 downloads/*.crdownload
+# 程式執行紀錄
+logs/

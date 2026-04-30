@@ -1,0 +1,27 @@
+{
+  "url": "https://www.ezmoney.com.tw/ETF/Fund/Info?fundCode=49YTW",
+  "download_subdir": "downloads",
+  "file_prefix": "00981A",
+  "timeouts": {
+    "page_wait_seconds": 20,
+    "download_timeout_seconds": 60,
+    "after_tab_click_seconds": 2,
+    "after_scroll_seconds": 1
+  },
+  "retry": {
+    "max_attempts": 3,
+    "base_delay_seconds": 2
+  },
+  "validation": {
+    "min_file_size_bytes": 1024
+  },
+  "selectors": {
+    "portfolio_tab": "//a[contains(text(), '投資組合')]",
+    "expand_btn": "//button[contains(., '展開全部')]",
+    "export_btn": "//button[contains(., '匯出XLSX檔')]"
+  },
+  "chrome": {
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "window_size": "1920,1080"
+  }
+}
