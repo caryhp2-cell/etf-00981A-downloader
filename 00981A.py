@@ -161,6 +161,46 @@ def validate_excel_file(filepath, min_size):
     )
 
 
+def read_data_date_from_excel(filepath):
+    """從 A1 儲存格讀取實際資料日期。
+
+    A1 格式：「資料日期：115/04/30」（ROC 曆）
+    回傳 'YYYY-MM-DD' 字串；解析失敗時回傳 None。
+    """
+    import openpyxl
+
+    try:
+        wb = openpyxl.load_workbook(filepath, read_only=True)
+        ws = wb.active
+        cell_value = str(ws["A1"].value or "").strip()
+        wb.close()
+    except Exception as exc:
+        logger.warning(f"無法讀取 A1 儲存格：{exc}")
+        return None
+
+    # 擷取「115/04/30」部分（冒號後的文字）
+    if "：" in cell_value:
+        date_part = cell_value.split("：", 1)[1].strip()
+    elif ":" in cell_value:
+        date_part = cell_value.split(":", 1)[1].strip()
+    else:
+        date_part = cell_value
+
+    # 解析 ROC 日期 YYY/MM/DD → Gregorian
+    parts = date_part.replace("-", "/").split("/")
+    if len(parts) != 3:
+        logger.warning(f"A1 日期格式不符，無法解析：'{cell_value}'")
+        return None
+
+    try:
+        roc_year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
+        gregorian_year = roc_year + 1911
+        return f"{gregorian_year}-{month:02d}-{day:02d}"
+    except ValueError as exc:
+        logger.warning(f"A1 日期數值解析失敗：{exc}，原始值：'{cell_value}'")
+        return None
+
+
 # ---------------------------------------------------------------------------
 # WebDriver 建立
 # ---------------------------------------------------------------------------
@@ -269,17 +309,27 @@ def export_00981a_silent(config):
             description="下載與驗證",
         )
 
-        date_stamp = datetime.now().strftime("%Y-%m-%d")
+        # 以檔案內的實際資料日期命名，避免假日下載到重複資料卻用當天日期命名
+        data_date = read_data_date_from_excel(src)
+        if data_date:
+            date_stamp = data_date
+            logger.info(f"檔案內資料日期：{data_date}")
+        else:
+            date_stamp = datetime.now().strftime("%Y-%m-%d")
+            logger.warning("無法從檔案讀取資料日期，改用今日日期作為檔名")
+
         new_name = f"{config['file_prefix']}_{date_stamp}.xlsx"
         dst = os.path.join(download_path, new_name)
+
         if os.path.exists(dst):
-            dst = os.path.join(
-                download_path,
-                f"{config['file_prefix']}_"
-                f"{datetime.now().strftime('%Y-%m-%d_%H%M%S')}.xlsx",
+            os.remove(src)
+            logger.warning(
+                f"資料日期 {date_stamp} 的檔案已存在（今日可能為休市假日），"
+                f"略過重複下載，保留原檔：{dst}"
             )
-        shutil.move(src, dst)
-        logger.info(f"完成。檔案儲存為：{dst}")
+        else:
+            shutil.move(src, dst)
+            logger.info(f"完成。檔案儲存為：{dst}")
 
     except Exception as exc:
         logger.error(f"執行失敗：{exc}")
