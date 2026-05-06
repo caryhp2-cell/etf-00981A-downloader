@@ -2,23 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChangeSummary } from './components/ChangeSummary';
 import { DashboardHeader } from './components/DashboardHeader';
 import { HoldingsTable } from './components/HoldingsTable';
-import { KpiGrid } from './components/KpiGrid';
-import { TrendCharts } from './components/TrendCharts';
 import { ValidationPanel } from './components/ValidationPanel';
 import {
   buildDailyChanges,
-  calculateTopTenConcentration,
   compareLatestHoldings,
   getLatestSnapshot,
   getPreviousSnapshot,
   sortSnapshots,
 } from './lib/analytics';
-import {
-  buildHistoricalHoldingsCsv,
-  buildLatestHoldingsCsv,
-  buildValidationCsv,
-  downloadCsv,
-} from './lib/csv';
 import type { HoldingsDataset } from './types';
 
 export default function App() {
@@ -43,7 +34,6 @@ export default function App() {
     const latestRows = compareLatestHoldings(latest, previous);
     const dailyChanges = buildDailyChanges(snapshots);
     const latestChange = dailyChanges.at(-1) ?? null;
-    const latestStockWeight = latest?.assetAllocation.find((item) => item.label === '股票')?.weight ?? 0;
 
     return {
       snapshots,
@@ -51,8 +41,6 @@ export default function App() {
       previous,
       latestRows,
       latestChange,
-      latestStockWeight,
-      topTenConcentration: calculateTopTenConcentration(latest),
     };
   }, [dataset]);
 
@@ -83,18 +71,7 @@ export default function App() {
       <DashboardHeader
         latestDate={viewModel.latest?.date ?? null}
         generatedAt={dataset.generatedAt}
-        onExportLatest={() => downloadCsv('00981A-latest-holdings.csv', buildLatestHoldingsCsv(viewModel.latestRows))}
-        onExportHistorical={() => downloadCsv('00981A-historical-holdings.csv', buildHistoricalHoldingsCsv(viewModel.snapshots))}
-        onExportValidation={() => downloadCsv('00981A-validation-report.csv', buildValidationCsv(dataset.validFiles, dataset.excludedFiles))}
       />
-      <KpiGrid
-        validFileCount={dataset.validFiles.length}
-        excludedFileCount={dataset.excludedFiles.length}
-        stockWeight={viewModel.latestStockWeight}
-        topTenConcentration={viewModel.topTenConcentration}
-        holdingCount={viewModel.latest?.holdings.length ?? 0}
-      />
-      <TrendCharts snapshots={viewModel.snapshots} latestRows={viewModel.latestRows} />
       <ChangeSummary latestChange={viewModel.latestChange} />
       <HoldingsTable rows={viewModel.latestRows} />
       <ValidationPanel validFiles={dataset.validFiles} excludedFiles={dataset.excludedFiles} />
