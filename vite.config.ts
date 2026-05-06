@@ -10,6 +10,7 @@ type VitestUserConfig = UserConfig & {
 };
 
 const config: VitestUserConfig = {
+  base: '/etf-00981A-downloader/',
   plugins: [react()],
   build: {
     rollupOptions: {
