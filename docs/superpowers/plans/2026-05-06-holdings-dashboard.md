@@ -6,7 +6,7 @@
 
 **Architecture:** A Node generator parses local Excel workbooks during development/build time, validates filename dates against Excel `A1` ROC dates, and emits static JSON. The React app loads that JSON, computes dashboard analytics in pure TypeScript helpers, renders an overview-first dashboard, and exports CSV files client-side.
 
-**Tech Stack:** React, Vite, TypeScript, Vitest, `xlsx`, `recharts`, `lucide-react`, static JSON.
+**Tech Stack:** React, Vite, TypeScript, Vitest, `read-excel-file`, `recharts`, `lucide-react`, static JSON.
 
 ---
 
@@ -70,7 +70,7 @@ Write `package.json`:
     "lucide-react": "^0.468.0",
     "recharts": "^2.13.3",
     "vite": "^6.0.0",
-    "xlsx": "^0.18.5",
+    "read-excel-file": "^9.0.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -270,7 +270,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import XLSX from 'xlsx';
+import readXlsxFile from 'read-excel-file/node';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -316,14 +316,11 @@ export function parseHoldingRow(row) {
   return { stockCode, stockName, shares, weight };
 }
 
-export function parseWorkbook(filePath) {
-  const workbook = XLSX.readFile(filePath, { cellDates: false });
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  return XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false, raw: false });
+export async function parseWorkbook(filePath) {
+  return readXlsxFile(filePath);
 }
 
-export function buildDataset(downloadsDir = path.join(repoRoot, 'downloads')) {
+export async function buildDataset(downloadsDir = path.join(repoRoot, 'downloads')) {
   return {
     generatedAt: new Date().toISOString(),
     sourceRepo: 'https://github.com/caryhp2-cell/etf-00981A-downloader',
@@ -339,7 +336,7 @@ export function writeDataset(dataset, outputPath = path.join(repoRoot, 'public',
 }
 
 if (process.argv[1] === __filename) {
-  const dataset = buildDataset();
+  const dataset = await buildDataset();
   writeDataset(dataset);
 }
 ```
@@ -528,7 +525,7 @@ export function parseSnapshot(fileName, rows) {
 Replace `buildDataset` in `scripts/generate-holdings-json.mjs` with:
 
 ```js
-export function buildDataset(downloadsDir = path.join(repoRoot, 'downloads')) {
+export async function buildDataset(downloadsDir = path.join(repoRoot, 'downloads')) {
   const dataset = {
     generatedAt: new Date().toISOString(),
     sourceRepo: 'https://github.com/caryhp2-cell/etf-00981A-downloader',
@@ -543,7 +540,7 @@ export function buildDataset(downloadsDir = path.join(repoRoot, 'downloads')) {
 
   for (const fileName of fileNames) {
     const filePath = path.join(downloadsDir, fileName);
-    const rows = parseWorkbook(filePath);
+    const rows = await parseWorkbook(filePath);
     const result = parseSnapshot(fileName, rows);
     if (result.excluded) dataset.excludedFiles.push(result.excluded);
     if (result.validFile) dataset.validFiles.push(result.validFile);

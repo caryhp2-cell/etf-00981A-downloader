@@ -176,7 +176,7 @@ Use:
 - React.
 - Vite.
 - TypeScript.
-- `xlsx` for the Node generator.
+- `read-excel-file` for the Node generator.
 - `recharts` for charts.
 - `lucide-react` for icons.
 - Static JSON served from `public/data/holdings.json`.
