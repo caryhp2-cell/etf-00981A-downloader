@@ -58,6 +58,21 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         run: python 00981A.py
 
+      - name: Set up Node
+        if: steps.check.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dashboard dependencies
+        if: steps.check.outputs.skip != 'true'
+        run: npm ci
+
+      - name: Generate holdings dashboard data
+        if: steps.check.outputs.skip != 'true'
+        run: npm run generate:data
+
       - name: Commit and push downloaded file
         if: steps.check.outputs.skip != 'true'
         run: |
@@ -65,8 +80,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add downloads/
           if git diff --cached --quiet; then
+            git checkout -- public/data/holdings.json
             echo "No new files to commit."
           else
+            git add public/data/holdings.json
             git commit -m "Add 00981A download $(TZ=Asia/Taipei date +%Y-%m-%d)"
             git push
           fi
