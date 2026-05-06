@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "npm run generate:data && tsc -b && vite build",
