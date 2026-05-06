@@ -84,6 +84,13 @@ select {
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+  margin-left: auto;
+  padding-right: 24px;
+}
+
+.historical-download {
+  min-width: 180px;
+  justify-content: center;
 }
 
 .kpi-grid,

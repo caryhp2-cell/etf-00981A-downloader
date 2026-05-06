@@ -19,9 +19,9 @@ export function DashboardHeader({
         <p>Latest valid data: {latestDate ?? '-'} · Generated: {new Date(generatedAt).toLocaleString('zh-TW')}</p>
       </div>
       <div className="header-actions">
-        <a className="download-button" href={downloadsZipHref} download>
+        <a className="download-button historical-download" href={downloadsZipHref} download>
           <Download size={16} />
-          Download Excel ZIP
+          Historical Data ZIP
         </a>
       </div>
     </header>
