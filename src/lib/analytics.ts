@@ -71,8 +71,12 @@ export function buildDailyChanges(snapshots: Snapshot[]): DailyChange[] {
       date: snapshot.date,
       added,
       removed,
-      increased: compared.filter((row) => row.weightChange > 0).sort((a, b) => b.weightChange - a.weightChange),
-      decreased: compared.filter((row) => row.weightChange < 0).sort((a, b) => a.weightChange - b.weightChange),
+      increased: compared
+        .filter((row) => row.previousWeight !== null && row.weightChange > 0)
+        .sort((a, b) => b.weightChange - a.weightChange),
+      decreased: compared
+        .filter((row) => row.previousWeight !== null && row.weightChange < 0)
+        .sort((a, b) => a.weightChange - b.weightChange),
     };
   });
 }

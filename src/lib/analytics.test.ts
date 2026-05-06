@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import {
+  buildDailyChanges,
   calculateTopTenConcentration,
   compareLatestHoldings,
   getAddedRemoved,
@@ -56,8 +57,47 @@ it('compares latest holdings to previous snapshot', () => {
   expect(rows.find((row) => row.stockCode === '2317')?.previousWeight).toBeNull();
 });
 
+it('includes rank movement when comparing holdings', () => {
+  const rows = compareLatestHoldings(snapshots[0], snapshots[1]);
+  const tsmc = rows.find((row) => row.stockCode === '2330');
+
+  expect(tsmc?.rank).toBe(1);
+  expect(tsmc?.previousRank).toBe(1);
+  expect(tsmc?.rankChange).toBe(0);
+});
+
 it('detects added and removed stocks', () => {
   const changes = getAddedRemoved(snapshots[0], snapshots[1]);
   expect(changes.added.map((holding) => holding.stockCode)).toEqual(['2317', '2454']);
   expect(changes.removed.map((holding) => holding.stockCode)).toEqual(['2308']);
+});
+
+it('buildDailyChanges keeps added stocks separate from increased movers', () => {
+  const [changes] = buildDailyChanges(snapshots);
+
+  expect(changes.added.map((holding) => holding.stockCode)).toEqual(['2317', '2454']);
+  expect(changes.increased.map((holding) => holding.stockCode)).toEqual(['2330']);
+});
+
+it('buildDailyChanges includes existing positive and negative weight changes as movers', () => {
+  const [changes] = buildDailyChanges([
+    {
+      ...snapshots[1],
+      holdings: [
+        { stockCode: '2330', stockName: '台積電', shares: 90, weight: 8 },
+        { stockCode: '2308', stockName: '台達電', shares: 40, weight: 5 },
+      ],
+    },
+    {
+      ...snapshots[0],
+      holdings: [
+        { stockCode: '2330', stockName: '台積電', shares: 100, weight: 10 },
+        { stockCode: '2308', stockName: '台達電', shares: 35, weight: 3 },
+        { stockCode: '2317', stockName: '鴻海', shares: 50, weight: 4 },
+      ],
+    },
+  ]);
+
+  expect(changes.increased.map((holding) => holding.stockCode)).toEqual(['2330']);
+  expect(changes.decreased.map((holding) => holding.stockCode)).toEqual(['2308']);
 });
