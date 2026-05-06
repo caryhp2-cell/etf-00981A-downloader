@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {
+  buildDataset,
   findHoldingsHeader,
   normalizeWorkbookRows,
   parseA1Date,
@@ -88,4 +92,46 @@ test('parseSnapshot excludes mismatched filename and A1 dates', () => {
   const result = parseSnapshot('00981A_2026-05-02.xlsx', validRows);
   assert.equal(result.snapshot, null);
   assert.equal(result.excluded.reason, 'filename date 2026-05-02 != A1 date 2026-05-05');
+});
+
+test('parseSnapshot excludes missing fund asset values', () => {
+  const rows = validRows.map((row) => [...row]);
+  rows[3][1] = null;
+  const result = parseSnapshot('00981A_2026-05-05.xlsx', rows);
+  assert.equal(result.snapshot, null);
+  assert.equal(result.excluded.reason, 'fund asset fields not found');
+});
+
+test('parseSnapshot excludes missing allocation and cash sections', () => {
+  const missingStockAllocationRows = validRows.map((row) => [...row]);
+  missingStockAllocationRows[9][0] = 'å‚µåˆ¸';
+  const missingStockAllocation = parseSnapshot('00981A_2026-05-05.xlsx', missingStockAllocationRows);
+  assert.equal(missingStockAllocation.snapshot, null);
+  assert.equal(missingStockAllocation.excluded.reason, 'stock allocation row not found');
+
+  const missingCashRows = validRows.map((row) => [...row]);
+  for (let index = 12; index < 16; index += 1) {
+    missingCashRows[index] = [];
+  }
+  const missingCash = parseSnapshot('00981A_2026-05-05.xlsx', missingCashRows);
+  assert.equal(missingCash.snapshot, null);
+  assert.equal(missingCash.excluded.reason, 'cash items not found');
+});
+
+test('buildDataset excludes unreadable workbook and continues', async () => {
+  const downloadsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'holdings-downloads-'));
+  try {
+    fs.writeFileSync(path.join(downloadsDir, '00981A_2026-05-05.xlsx'), 'not an xlsx file', 'utf8');
+    const dataset = await buildDataset(downloadsDir);
+    assert.equal(dataset.validFiles.length, 0);
+    assert.equal(dataset.snapshots.length, 0);
+    assert.equal(dataset.excludedFiles.length, 1);
+    assert.equal(dataset.excludedFiles[0].fileName, '00981A_2026-05-05.xlsx');
+    assert.equal(dataset.excludedFiles[0].fileDate, '2026-05-05');
+    assert.equal(dataset.excludedFiles[0].a1Text, null);
+    assert.equal(dataset.excludedFiles[0].a1Date, null);
+    assert.match(dataset.excludedFiles[0].reason, /^failed to read workbook: /);
+  } finally {
+    fs.rmSync(downloadsDir, { recursive: true, force: true });
+  }
 });
