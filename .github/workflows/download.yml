@@ -2,12 +2,12 @@ name: Download 00981A ETF
 
 on:
   schedule:
-    # 17:00 台北時間 (UTC+8) = 09:00 UTC — 首次嘗試
-    - cron: '0 9 * * *'
+    # 17:00 台北時間 (UTC+8) = 09:00 UTC — 週一至週五首次嘗試
+    - cron: '0 9 * * 1-5'
     # 18:00 台北時間 (UTC+8) = 10:00 UTC — Retry 1（若首次已成功則跳過）
-    - cron: '0 10 * * *'
+    - cron: '0 10 * * 1-5'
     # 19:00 台北時間 (UTC+8) = 11:00 UTC — Retry 2（若前次已成功則跳過）
-    - cron: '0 11 * * *'
+    - cron: '0 11 * * 1-5'
   workflow_dispatch:  # 允許在 Actions 頁面手動觸發
 
 permissions:

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-06T11:05:46.901Z",
+  "generatedAt": "2026-05-06T12:28:53.053Z",
   "sourceRepo": "https://github.com/caryhp2-cell/etf-00981A-downloader",
   "validFiles": [
     {
@@ -33,22 +33,7 @@
       "a1Date": "2026-05-06"
     }
   ],
-  "excludedFiles": [
-    {
-      "fileName": "00981A_2026-05-01.xlsx",
-      "fileDate": "2026-05-01",
-      "a1Text": "資料日期：115/04/30",
-      "a1Date": "2026-04-30",
-      "reason": "filename date 2026-05-01 != A1 date 2026-04-30"
-    },
-    {
-      "fileName": "00981A_2026-05-02.xlsx",
-      "fileDate": "2026-05-02",
-      "a1Text": "資料日期：115/04/30",
-      "a1Date": "2026-04-30",
-      "reason": "filename date 2026-05-02 != A1 date 2026-04-30"
-    }
-  ],
+  "excludedFiles": [],
   "snapshots": [
     {
       "date": "2026-04-29",

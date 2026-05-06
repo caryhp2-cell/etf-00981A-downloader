@@ -1,6 +1,6 @@
 # 00981A ETF 自動下載器
 
-每日自動從 [ezmoney](https://www.ezmoney.com.tw/ETF/Fund/Info?fundCode=49YTW) 下載「統一台股增長主動式 ETF（00981A）」的投資組合 XLSX 檔，並 commit 回 repo。
+週一至週五自動從 [ezmoney](https://www.ezmoney.com.tw/ETF/Fund/Info?fundCode=49YTW) 下載「統一台股增長主動式 ETF（00981A）」的投資組合 XLSX 檔，並 commit 回 repo。
 
 ## 功能特色
 
@@ -9,7 +9,8 @@
 - 完整 logging，紀錄寫到 `logs/download.log`
 - 下載完成後驗證 Excel 檔案（檔案大小 + openpyxl 開啟）
 - 失敗自動重試（指數退避）
-- 以檔案內 A1 的實際資料日期命名，假日下載到重複資料時自動略過
+- 執行前查詢 TWSE 官方市場開休市日期，休市或無交易日會直接略過
+- 以台北時區今日日期命名下載檔案
 
 ## 安裝
 
@@ -64,7 +65,7 @@ npm run build
 
 ### 自動排程（GitHub Actions）
 
-`.github/workflows/download.yml` 已設定每天台北時間 18:00（UTC 10:00）自動執行，
+`.github/workflows/download.yml` 已設定週一至週五台北時間 17:00、18:00、19:00 自動執行，
 也可以在 Actions 頁面手動觸發 workflow。
 
 ## 設定（config.json）

@@ -10,13 +10,18 @@
 """
 
 import glob
+import re
 import json
 import logging
 import os
+import ssl
 import shutil
 import sys
 import time
-from datetime import datetime
+import urllib.error
+import urllib.request
+from datetime import datetime, timedelta, timezone
+from html import unescape
 
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -78,6 +83,11 @@ def setup_logger():
 
 
 logger = setup_logger()
+TAIPEI_TZ = timezone(timedelta(hours=8))
+TWSE_HOLIDAY_URL = (
+    "https://www.twse.com.tw/holidaySchedule/holidaySchedule"
+    "?queryYear={roc_year}&response=html"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -120,6 +130,76 @@ def retry_with_backoff(func, max_attempts, base_delay, description="操作"):
 
 
 # ---------------------------------------------------------------------------
+# TWSE 休市日檢查
+# ---------------------------------------------------------------------------
+def today_in_taipei():
+    """回傳台北時區今日日期字串。"""
+    return datetime.now(TAIPEI_TZ).strftime("%Y-%m-%d")
+
+
+def strip_html(value):
+    """移除 TWSE HTML 表格儲存格中的標籤與空白。"""
+    text = re.sub(r"<[^>]+>", "", value)
+    return unescape(text).strip()
+
+
+def fetch_twse_closed_dates(year):
+    """從 TWSE 官方市場開休市日期頁面擷取不交易日期。"""
+    roc_year = year - 1911
+    url = TWSE_HOLIDAY_URL.format(roc_year=roc_year)
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=15) as response:
+            html = response.read().decode("utf-8")
+    except urllib.error.URLError as exc:
+        if "CERTIFICATE_VERIFY_FAILED" not in str(exc):
+            raise
+        logger.warning("TWSE 憑證驗證失敗，改用不驗證憑證方式重新查詢休市日。")
+        context = ssl._create_unverified_context()
+        with urllib.request.urlopen(request, timeout=15, context=context) as response:
+            html = response.read().decode("utf-8")
+
+    closed_dates = set()
+    rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, flags=re.DOTALL | re.IGNORECASE)
+    for row in rows:
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.DOTALL | re.IGNORECASE)
+        if len(cells) < 2:
+            continue
+
+        date_text = strip_html(cells[0])
+        name = strip_html(cells[1])
+        note = strip_html(cells[2]) if len(cells) > 2 else ""
+
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_text):
+            continue
+        if "開始交易日" in name or "最後交易日" in name:
+            continue
+        if "市場無交易" in name or "放假" in note or "補假" in note:
+            closed_dates.add(date_text)
+
+    if not closed_dates:
+        raise RuntimeError("TWSE 休市日清單為空，無法確認市場狀態")
+
+    return closed_dates
+
+
+def is_twse_closed(today):
+    """判斷指定日期是否為 TWSE 官方公告休市或無交易日。"""
+    year = int(today[:4])
+    closed_dates = fetch_twse_closed_dates(year)
+    return today in closed_dates
+
+
+# ---------------------------------------------------------------------------
 # 下載偵測 + 驗證
 # ---------------------------------------------------------------------------
 def wait_for_download(download_dir, before_files, timeout):
@@ -159,46 +239,6 @@ def validate_excel_file(filepath, min_size):
         f"檔案驗證通過：{os.path.basename(filepath)}，"
         f"{size} bytes，{sheet_count} 個工作表"
     )
-
-
-def read_data_date_from_excel(filepath):
-    """從 A1 儲存格讀取實際資料日期。
-
-    A1 格式：「資料日期：115/04/30」（ROC 曆）
-    回傳 'YYYY-MM-DD' 字串；解析失敗時回傳 None。
-    """
-    import openpyxl
-
-    try:
-        wb = openpyxl.load_workbook(filepath, read_only=True)
-        ws = wb.active
-        cell_value = str(ws["A1"].value or "").strip()
-        wb.close()
-    except Exception as exc:
-        logger.warning(f"無法讀取 A1 儲存格：{exc}")
-        return None
-
-    # 擷取「115/04/30」部分（冒號後的文字）
-    if "：" in cell_value:
-        date_part = cell_value.split("：", 1)[1].strip()
-    elif ":" in cell_value:
-        date_part = cell_value.split(":", 1)[1].strip()
-    else:
-        date_part = cell_value
-
-    # 解析 ROC 日期 YYY/MM/DD → Gregorian
-    parts = date_part.replace("-", "/").split("/")
-    if len(parts) != 3:
-        logger.warning(f"A1 日期格式不符，無法解析：'{cell_value}'")
-        return None
-
-    try:
-        roc_year, month, day = int(parts[0]), int(parts[1]), int(parts[2])
-        gregorian_year = roc_year + 1911
-        return f"{gregorian_year}-{month:02d}-{day:02d}"
-    except ValueError as exc:
-        logger.warning(f"A1 日期數值解析失敗：{exc}，原始值：'{cell_value}'")
-        return None
 
 
 # ---------------------------------------------------------------------------
@@ -309,22 +349,14 @@ def export_00981a_silent(config):
             description="下載與驗證",
         )
 
-        # 以檔案內的實際資料日期命名，避免假日下載到重複資料卻用當天日期命名
-        data_date = read_data_date_from_excel(src)
-        if data_date:
-            date_stamp = data_date
-            logger.info(f"檔案內資料日期：{data_date}")
-        else:
-            date_stamp = datetime.now().strftime("%Y-%m-%d")
-            logger.warning("無法從檔案讀取資料日期，改用今日日期作為檔名")
-
+        date_stamp = today_in_taipei()
         new_name = f"{config['file_prefix']}_{date_stamp}.xlsx"
         dst = os.path.join(download_path, new_name)
 
         if os.path.exists(dst):
             os.remove(src)
             logger.warning(
-                f"資料日期 {date_stamp} 的檔案已存在（今日可能為休市假日），"
+                f"今日檔案 {date_stamp} 已存在，"
                 f"略過重複下載，保留原檔：{dst}"
             )
         else:
@@ -343,8 +375,15 @@ def main():
     print("=" * 60)
     print(" 00981A 統一台股增長主動式 ETF - 背景自動下載工具 ")
     print("=" * 60)
-    check_environment()
     config = load_config()
+    today = today_in_taipei()
+    try:
+        if is_twse_closed(today):
+            logger.info(f"{today} 為 TWSE 休市或無交易日，略過下載。")
+            return
+    except Exception as exc:
+        logger.warning(f"無法確認 {today} 是否為 TWSE 交易日，保險起見繼續下載：{exc}")
+    check_environment()
     export_00981a_silent(config)
 
 
