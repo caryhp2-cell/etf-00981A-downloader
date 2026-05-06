@@ -14,8 +14,10 @@ export function DashboardHeader({
   return (
     <header className="dashboard-header">
       <div>
-        <p className="eyebrow">00981A</p>
-        <h1>Holdings Analyzer</h1>
+        <h1>
+          <span className="fund-code">00981A</span>
+          <span>Holdings Analyzer</span>
+        </h1>
         <p>Latest valid data: {latestDate ?? '-'} · Generated: {new Date(generatedAt).toLocaleString('zh-TW')}</p>
       </div>
       <div className="header-actions">

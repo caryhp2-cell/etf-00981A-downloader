@@ -61,6 +61,7 @@ select {
 }
 
 .dashboard-header h1 {
+  display: grid;
   font-size: 32px;
   line-height: 1.1;
   margin: 2px 0 8px;
@@ -71,12 +72,10 @@ select {
   margin: 0;
 }
 
-.eyebrow {
-  color: #0f766e;
-  font-size: 13px;
+.fund-code {
+  color: #2563eb;
   font-weight: 700;
   letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .header-actions {
