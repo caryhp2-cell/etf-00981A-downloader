@@ -13,14 +13,6 @@ export function parseFileDate(fileName) {
   return match ? match[1] : null;
 }
 
-export function parseA1Date(a1Text) {
-  if (typeof a1Text !== 'string') return null;
-  const match = /(\d{2,3})\/(\d{2})\/(\d{2})/.exec(a1Text);
-  if (!match) return null;
-  const year = Number(match[1]) + 1911;
-  return `${year}-${match[2]}-${match[3]}`;
-}
-
 export function parseNumber(value) {
   if (typeof value === 'number') return value;
   if (typeof value !== 'string') return null;
@@ -97,34 +89,23 @@ export function parseHoldings(rows) {
   return { holdings, error: null };
 }
 
-function excludedSnapshot(fileName, fileDate, a1Text, a1Date, reason) {
+function excludedSnapshot(fileName, fileDate, reason) {
   return {
-    excluded: { fileName, fileDate, a1Text, a1Date, reason },
+    excluded: { fileName, fileDate, reason },
     snapshot: null,
-    validFile: null,
   };
 }
 
 export function parseSnapshot(fileName, rows) {
-  const a1Text = readCell(rows, 0, 0);
   const fileDate = parseFileDate(fileName);
-  const a1Date = parseA1Date(a1Text);
 
   if (!fileDate) {
-    return excludedSnapshot(fileName, null, a1Text, a1Date, 'filename does not match 00981A_YYYY-MM-DD.xlsx');
-  }
-
-  if (!a1Date) {
-    return excludedSnapshot(fileName, fileDate, a1Text, null, 'A1 does not contain a parseable ROC date');
-  }
-
-  if (fileDate !== a1Date) {
-    return excludedSnapshot(fileName, fileDate, a1Text, a1Date, `filename date ${fileDate} != A1 date ${a1Date}`);
+    return excludedSnapshot(fileName, null, 'filename does not match 00981A_YYYY-MM-DD.xlsx');
   }
 
   const { holdings, error } = parseHoldings(rows);
   if (error) {
-    return excludedSnapshot(fileName, fileDate, a1Text, a1Date, error);
+    return excludedSnapshot(fileName, fileDate, error);
   }
 
   const fundAssets = parseFundAssets(rows);
@@ -133,43 +114,39 @@ export function parseSnapshot(fileName, rows) {
     fundAssets.unitCount == null ||
     fundAssets.navPerUnit == null
   ) {
-    return excludedSnapshot(fileName, fileDate, a1Text, a1Date, 'fund asset fields not found');
+    return excludedSnapshot(fileName, fileDate, 'fund asset fields not found');
   }
 
   const assetAllocation = parseThreeColumnSection(rows, 8, 10);
   if (!assetAllocation.some((item) => item.label === '股票')) {
-    return excludedSnapshot(fileName, fileDate, a1Text, a1Date, 'stock allocation row not found');
+    return excludedSnapshot(fileName, fileDate, 'stock allocation row not found');
   }
 
   const cashItems = parseThreeColumnSection(rows, 12, 16);
   if (cashItems.length === 0) {
-    return excludedSnapshot(fileName, fileDate, a1Text, a1Date, 'cash items not found');
+    return excludedSnapshot(fileName, fileDate, 'cash items not found');
   }
 
   if (holdings.length === 0) {
-    return excludedSnapshot(fileName, fileDate, a1Text, a1Date, 'holdings rows not found');
+    return excludedSnapshot(fileName, fileDate, 'holdings rows not found');
   }
 
-  const validFile = { fileName, fileDate, a1Text, a1Date };
   const snapshot = {
     date: fileDate,
     fileName,
-    a1Text,
     fundAssets,
     assetAllocation,
     cashItems,
     holdings,
   };
 
-  return { excluded: null, snapshot, validFile };
+  return { excluded: null, snapshot };
 }
 
 export async function buildDataset(downloadsDir = path.join(repoRoot, 'downloads')) {
   const dataset = {
     generatedAt: new Date().toISOString(),
     sourceRepo: 'https://github.com/caryhp2-cell/etf-00981A-downloader',
-    validFiles: [],
-    excludedFiles: [],
     snapshots: [],
   };
 
@@ -182,24 +159,17 @@ export async function buildDataset(downloadsDir = path.join(repoRoot, 'downloads
     try {
       const rows = await parseWorkbook(filePath);
       const result = parseSnapshot(fileName, rows);
-      if (result.excluded) dataset.excludedFiles.push(result.excluded);
-      if (result.validFile) dataset.validFiles.push(result.validFile);
       if (result.snapshot) dataset.snapshots.push(result.snapshot);
+      if (result.excluded) {
+        console.warn(`Skipping ${fileName}: ${result.excluded.reason}`);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      dataset.excludedFiles.push({
-        fileName,
-        fileDate: parseFileDate(fileName),
-        a1Text: null,
-        a1Date: null,
-        reason: `failed to read workbook: ${message}`,
-      });
+      console.warn(`Skipping ${fileName}: failed to read workbook: ${message}`);
     }
   }
 
   dataset.snapshots.sort((a, b) => a.date.localeCompare(b.date));
-  dataset.validFiles.sort((a, b) => a.fileDate.localeCompare(b.fileDate));
-  dataset.excludedFiles.sort((a, b) => a.fileName.localeCompare(b.fileName));
 
   return dataset;
 }

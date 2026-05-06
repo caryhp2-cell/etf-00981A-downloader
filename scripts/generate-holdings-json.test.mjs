@@ -7,7 +7,6 @@ import {
   buildDataset,
   findHoldingsHeader,
   normalizeWorkbookRows,
-  parseA1Date,
   parseFileDate,
   parseHoldingRow,
   parseNumber,
@@ -17,12 +16,6 @@ import {
 test('parseFileDate extracts valid 00981A filename date', () => {
   assert.equal(parseFileDate('00981A_2026-05-05.xlsx'), '2026-05-05');
   assert.equal(parseFileDate('foo_2026-05-05.xlsx'), null);
-});
-
-test('parseA1Date converts ROC date text to Gregorian date', () => {
-  assert.equal(parseA1Date('資料日期：115/05/05'), '2026-05-05');
-  assert.equal(parseA1Date('資料日期：115/04/30'), '2026-04-30');
-  assert.equal(parseA1Date('bad value'), null);
 });
 
 test('parseNumber handles NTD, commas, percents, and numbers', () => {
@@ -80,18 +73,18 @@ const validRows = [
   ['2330', '台積電', '1,000,000', '12.34%'],
 ];
 
-test('parseSnapshot accepts matching filename and A1 dates', () => {
+test('parseSnapshot accepts a workbook using the filename date', () => {
   const result = parseSnapshot('00981A_2026-05-05.xlsx', validRows);
   assert.equal(result.excluded, null);
-  assert.equal(result.validFile.fileDate, '2026-05-05');
+  assert.equal(result.snapshot.date, '2026-05-05');
   assert.equal(result.snapshot.holdings[0].stockCode, '2330');
   assert.equal(result.snapshot.fundAssets.navPerUnit, 29.37);
 });
 
-test('parseSnapshot excludes mismatched filename and A1 dates', () => {
+test('parseSnapshot uses the filename date only', () => {
   const result = parseSnapshot('00981A_2026-05-02.xlsx', validRows);
-  assert.equal(result.snapshot, null);
-  assert.equal(result.excluded.reason, 'filename date 2026-05-02 != A1 date 2026-05-05');
+  assert.equal(result.excluded, null);
+  assert.equal(result.snapshot.date, '2026-05-02');
 });
 
 test('parseSnapshot excludes missing fund asset values', () => {
@@ -123,14 +116,8 @@ test('buildDataset excludes unreadable workbook and continues', async () => {
   try {
     fs.writeFileSync(path.join(downloadsDir, '00981A_2026-05-05.xlsx'), 'not an xlsx file', 'utf8');
     const dataset = await buildDataset(downloadsDir);
-    assert.equal(dataset.validFiles.length, 0);
     assert.equal(dataset.snapshots.length, 0);
-    assert.equal(dataset.excludedFiles.length, 1);
-    assert.equal(dataset.excludedFiles[0].fileName, '00981A_2026-05-05.xlsx');
-    assert.equal(dataset.excludedFiles[0].fileDate, '2026-05-05');
-    assert.equal(dataset.excludedFiles[0].a1Text, null);
-    assert.equal(dataset.excludedFiles[0].a1Date, null);
-    assert.match(dataset.excludedFiles[0].reason, /^failed to read workbook: /);
+    assert.deepEqual(Object.keys(dataset).sort(), ['generatedAt', 'snapshots', 'sourceRepo']);
   } finally {
     fs.rmSync(downloadsDir, { recursive: true, force: true });
   }

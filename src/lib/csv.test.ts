@@ -31,7 +31,6 @@ it('builds historical holdings CSV', () => {
     {
       date: '2026-05-05',
       fileName: '00981A_2026-05-05.xlsx',
-      a1Text: '資料日期：115/05/05',
       fundAssets: { netAssetValue: null, unitCount: null, navPerUnit: null },
       assetAllocation: [],
       cashItems: [],

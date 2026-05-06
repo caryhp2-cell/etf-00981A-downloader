@@ -85,8 +85,7 @@ select {
 
 .kpi-grid,
 .chart-grid,
-.change-grid,
-.validation-grid {
+.change-grid {
   display: grid;
   gap: 14px;
 }
@@ -96,8 +95,7 @@ select {
 }
 
 .chart-grid,
-.change-grid,
-.validation-grid {
+.change-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -208,8 +206,7 @@ td:nth-child(3) {
 
   .kpi-grid,
   .chart-grid,
-  .change-grid,
-  .validation-grid {
+  .change-grid {
     grid-template-columns: 1fr;
   }
 }

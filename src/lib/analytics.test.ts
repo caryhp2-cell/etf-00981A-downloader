@@ -14,7 +14,6 @@ const snapshots: Snapshot[] = [
   {
     date: '2026-05-05',
     fileName: '00981A_2026-05-05.xlsx',
-    a1Text: '資料日期：115/05/05',
     fundAssets: { netAssetValue: 2, unitCount: 2, navPerUnit: 2 },
     assetAllocation: [],
     cashItems: [],
@@ -27,7 +26,6 @@ const snapshots: Snapshot[] = [
   {
     date: '2026-05-04',
     fileName: '00981A_2026-05-04.xlsx',
-    a1Text: '資料日期：115/05/04',
     fundAssets: { netAssetValue: 1, unitCount: 1, navPerUnit: 1 },
     assetAllocation: [],
     cashItems: [],

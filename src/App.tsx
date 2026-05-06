@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ChangeSummary } from './components/ChangeSummary';
 import { DashboardHeader } from './components/DashboardHeader';
 import { HoldingsTable } from './components/HoldingsTable';
-import { ValidationPanel } from './components/ValidationPanel';
 import {
   buildDailyChanges,
   compareLatestHoldings,
@@ -74,7 +73,6 @@ export default function App() {
       />
       <ChangeSummary latestChange={viewModel.latestChange} />
       <HoldingsTable rows={viewModel.latestRows} />
-      <ValidationPanel validFiles={dataset.validFiles} excludedFiles={dataset.excludedFiles} />
     </main>
   );
 }

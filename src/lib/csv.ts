@@ -1,4 +1,4 @@
-import type { FileValidationRecord, HoldingComparison, Snapshot } from '../types';
+import type { HoldingComparison, Snapshot } from '../types';
 
 export function escapeCsvValue(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -43,16 +43,6 @@ export function buildHistoricalHoldingsCsv(snapshots: Snapshot[]): string {
         holding.weight,
       ]),
     ),
-  );
-}
-
-export function buildValidationCsv(validFiles: FileValidationRecord[], excludedFiles: FileValidationRecord[]): string {
-  return toCsv(
-    ['status', 'fileName', 'fileDate', 'a1Text', 'a1Date', 'reason'],
-    [
-      ...validFiles.map((file) => ['valid', file.fileName, file.fileDate, file.a1Text, file.a1Date, '']),
-      ...excludedFiles.map((file) => ['excluded', file.fileName, file.fileDate, file.a1Text, file.a1Date, file.reason ?? '']),
-    ],
   );
 }
 

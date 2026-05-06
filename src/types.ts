@@ -5,14 +5,6 @@ export type Holding = {
   weight: number;
 };
 
-export type FileValidationRecord = {
-  fileName: string;
-  fileDate: string | null;
-  a1Text: string | null;
-  a1Date: string | null;
-  reason?: string;
-};
-
 export type FundAssets = {
   netAssetValue: number | null;
   unitCount: number | null;
@@ -28,7 +20,6 @@ export type WeightedItem = {
 export type Snapshot = {
   date: string;
   fileName: string;
-  a1Text: string | null;
   fundAssets: FundAssets;
   assetAllocation: WeightedItem[];
   cashItems: WeightedItem[];
@@ -38,8 +29,6 @@ export type Snapshot = {
 export type HoldingsDataset = {
   generatedAt: string;
   sourceRepo: string;
-  validFiles: FileValidationRecord[];
-  excludedFiles: FileValidationRecord[];
   snapshots: Snapshot[];
 };
 

@@ -1,44 +1,10 @@
 {
-  "generatedAt": "2026-05-06T12:28:53.053Z",
+  "generatedAt": "2026-05-06T12:37:24.419Z",
   "sourceRepo": "https://github.com/caryhp2-cell/etf-00981A-downloader",
-  "validFiles": [
-    {
-      "fileName": "00981A_2026-04-29.xlsx",
-      "fileDate": "2026-04-29",
-      "a1Text": "資料日期：115/04/29",
-      "a1Date": "2026-04-29"
-    },
-    {
-      "fileName": "00981A_2026-04-30.xlsx",
-      "fileDate": "2026-04-30",
-      "a1Text": "資料日期：115/04/30",
-      "a1Date": "2026-04-30"
-    },
-    {
-      "fileName": "00981A_2026-05-04.xlsx",
-      "fileDate": "2026-05-04",
-      "a1Text": "資料日期：115/05/04",
-      "a1Date": "2026-05-04"
-    },
-    {
-      "fileName": "00981A_2026-05-05.xlsx",
-      "fileDate": "2026-05-05",
-      "a1Text": "資料日期：115/05/05",
-      "a1Date": "2026-05-05"
-    },
-    {
-      "fileName": "00981A_2026-05-06.xlsx",
-      "fileDate": "2026-05-06",
-      "a1Text": "資料日期：115/05/06",
-      "a1Date": "2026-05-06"
-    }
-  ],
-  "excludedFiles": [],
   "snapshots": [
     {
       "date": "2026-04-29",
       "fileName": "00981A_2026-04-29.xlsx",
-      "a1Text": "資料日期：115/04/29",
       "fundAssets": {
         "netAssetValue": 236980413133,
         "unitCount": 8489209000,
@@ -390,7 +356,6 @@
     {
       "date": "2026-04-30",
       "fileName": "00981A_2026-04-30.xlsx",
-      "a1Text": "資料日期：115/04/30",
       "fundAssets": {
         "netAssetValue": 238945389225,
         "unitCount": 8467709000,
@@ -736,7 +701,6 @@
     {
       "date": "2026-05-04",
       "fileName": "00981A_2026-05-04.xlsx",
-      "a1Text": "資料日期：115/05/04",
       "fundAssets": {
         "netAssetValue": 254111503500,
         "unitCount": 8607709000,
@@ -1082,7 +1046,6 @@
     {
       "date": "2026-05-05",
       "fileName": "00981A_2026-05-05.xlsx",
-      "a1Text": "資料日期：115/05/05",
       "fundAssets": {
         "netAssetValue": 260747573102,
         "unitCount": 8878209000,
@@ -1434,7 +1397,6 @@
     {
       "date": "2026-05-06",
       "fileName": "00981A_2026-05-06.xlsx",
-      "a1Text": "資料日期：115/05/06",
       "fundAssets": {
         "netAssetValue": 269664027344,
         "unitCount": 9211709000,

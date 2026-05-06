@@ -35,7 +35,7 @@ python 00981A.py
 
 ### Holdings Dashboard
 
-React dashboard 會分析 `downloads/` 裡通過日期驗證的 Excel 持股資料。資料來源不是 GitHub tree 頁面，而是由本 repo 產生並 commit 的 `public/data/holdings.json`。
+React dashboard 會分析 `downloads/` 裡的 Excel 持股資料。資料來源不是 GitHub tree 頁面，而是由本 repo 產生並 commit 的 `public/data/holdings.json`。
 
 安裝前端相依套件：
 
@@ -60,8 +60,6 @@ npm run dev
 ```bash
 npm run build
 ```
-
-資料產生器只會納入檔名日期與 Excel `A1` 日期一致的檔案。例如 `00981A_2026-05-02.xlsx` 若 `A1` 是 `資料日期：115/04/30`，轉成西元為 `2026-04-30`，就會列入 validation report 的排除清單，不會用於 holdings 分析。
 
 ### 自動排程（GitHub Actions）
 
