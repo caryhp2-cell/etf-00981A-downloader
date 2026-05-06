@@ -7,6 +7,91 @@ import readXlsxFile from 'read-excel-file/node';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
+const ZIP_FILE_NAME = '00981A-downloads.zip';
+
+function crc32(buffer) {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function dosDateTime(date = new Date()) {
+  const year = Math.max(date.getFullYear(), 1980);
+  const dosTime =
+    (date.getHours() << 11) |
+    (date.getMinutes() << 5) |
+    Math.floor(date.getSeconds() / 2);
+  const dosDate =
+    ((year - 1980) << 9) |
+    ((date.getMonth() + 1) << 5) |
+    date.getDate();
+  return { dosDate, dosTime };
+}
+
+function writeZipEntryHeader(signature, fields) {
+  const {
+    version = 20,
+    flags = 0x0800,
+    compression = 0,
+    dosTime,
+    dosDate,
+    checksum,
+    compressedSize,
+    uncompressedSize,
+    fileName,
+    offset = 0,
+  } = fields;
+  const fileNameBuffer = Buffer.from(fileName, 'utf8');
+  const isCentralDirectory = signature === 0x02014b50;
+  const header = Buffer.alloc(isCentralDirectory ? 46 : 30);
+  let cursor = 0;
+
+  header.writeUInt32LE(signature, cursor);
+  cursor += 4;
+  if (isCentralDirectory) {
+    header.writeUInt16LE(version, cursor);
+    cursor += 2;
+  }
+  header.writeUInt16LE(version, cursor);
+  cursor += 2;
+  header.writeUInt16LE(flags, cursor);
+  cursor += 2;
+  header.writeUInt16LE(compression, cursor);
+  cursor += 2;
+  header.writeUInt16LE(dosTime, cursor);
+  cursor += 2;
+  header.writeUInt16LE(dosDate, cursor);
+  cursor += 2;
+  header.writeUInt32LE(checksum, cursor);
+  cursor += 4;
+  header.writeUInt32LE(compressedSize, cursor);
+  cursor += 4;
+  header.writeUInt32LE(uncompressedSize, cursor);
+  cursor += 4;
+  header.writeUInt16LE(fileNameBuffer.length, cursor);
+  cursor += 2;
+  header.writeUInt16LE(0, cursor);
+  cursor += 2;
+
+  if (isCentralDirectory) {
+    header.writeUInt16LE(0, cursor);
+    cursor += 2;
+    header.writeUInt16LE(0, cursor);
+    cursor += 2;
+    header.writeUInt16LE(0, cursor);
+    cursor += 2;
+    header.writeUInt32LE(0, cursor);
+    cursor += 4;
+    header.writeUInt32LE(offset, cursor);
+  }
+
+  return Buffer.concat([header, fileNameBuffer]);
+}
 
 export function parseFileDate(fileName) {
   const match = /^00981A_(\d{4}-\d{2}-\d{2})\.xlsx$/.exec(fileName);
@@ -179,7 +264,57 @@ export function writeDataset(dataset, outputPath = path.join(repoRoot, 'public',
   fs.writeFileSync(outputPath, `${JSON.stringify(dataset, null, 2)}\n`, 'utf8');
 }
 
+export function writeDownloadsZip(
+  downloadsDir = path.join(repoRoot, 'downloads'),
+  outputPath = path.join(repoRoot, 'public', 'downloads', ZIP_FILE_NAME),
+) {
+  const fileNames = fs.existsSync(downloadsDir)
+    ? fs.readdirSync(downloadsDir).filter((name) => name.toLowerCase().endsWith('.xlsx')).sort()
+    : [];
+
+  const chunks = [];
+  const centralDirectory = [];
+  let offset = 0;
+
+  for (const fileName of fileNames) {
+    const filePath = path.join(downloadsDir, fileName);
+    const data = fs.readFileSync(filePath);
+    const { dosDate, dosTime } = dosDateTime(fs.statSync(filePath).mtime);
+    const entry = {
+      fileName,
+      dosDate,
+      dosTime,
+      checksum: crc32(data),
+      compressedSize: data.length,
+      uncompressedSize: data.length,
+      offset,
+    };
+    const localHeader = writeZipEntryHeader(0x04034b50, entry);
+    chunks.push(localHeader, data);
+    centralDirectory.push(writeZipEntryHeader(0x02014b50, entry));
+    offset += localHeader.length + data.length;
+  }
+
+  const centralDirectoryOffset = offset;
+  const centralDirectoryBuffer = Buffer.concat(centralDirectory);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(0, 4);
+  end.writeUInt16LE(0, 6);
+  end.writeUInt16LE(fileNames.length, 8);
+  end.writeUInt16LE(fileNames.length, 10);
+  end.writeUInt32LE(centralDirectoryBuffer.length, 12);
+  end.writeUInt32LE(centralDirectoryOffset, 16);
+  end.writeUInt16LE(0, 20);
+
+  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+  fs.writeFileSync(outputPath, Buffer.concat([...chunks, centralDirectoryBuffer, end]));
+  return { outputPath, fileCount: fileNames.length };
+}
+
 if (process.argv[1] === __filename) {
   const dataset = await buildDataset();
   writeDataset(dataset);
+  const zip = writeDownloadsZip();
+  console.log(`Wrote ${zip.fileCount} Excel files to ${path.relative(repoRoot, zip.outputPath)}`);
 }

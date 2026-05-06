@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildHistoricalHoldingsCsv, buildLatestHoldingsCsv, escapeCsvValue } from './csv';
-import type { HoldingComparison, Snapshot } from '../types';
+import { buildLatestHoldingsCsv, escapeCsvValue } from './csv';
+import type { HoldingComparison } from '../types';
 
 it('escapes CSV values with quotes and commas', () => {
   expect(escapeCsvValue('a,b')).toBe('"a,b"');
@@ -26,16 +26,3 @@ it('builds latest holdings CSV', () => {
   expect(buildLatestHoldingsCsv(rows)).toContain('1,2330,台積電,1000,12.34,10,2.34,2,1');
 });
 
-it('builds historical holdings CSV', () => {
-  const snapshots: Snapshot[] = [
-    {
-      date: '2026-05-05',
-      fileName: '00981A_2026-05-05.xlsx',
-      fundAssets: { netAssetValue: null, unitCount: null, navPerUnit: null },
-      assetAllocation: [],
-      cashItems: [],
-      holdings: [{ stockCode: '2330', stockName: '台積電', shares: 1000, weight: 12.34 }],
-    },
-  ];
-  expect(buildHistoricalHoldingsCsv(snapshots)).toContain('2026-05-05,2330,台積電,1000,12.34');
-});

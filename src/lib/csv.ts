@@ -1,4 +1,4 @@
-import type { HoldingComparison, Snapshot } from '../types';
+import type { HoldingComparison } from '../types';
 
 export function escapeCsvValue(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -28,21 +28,6 @@ export function buildLatestHoldingsCsv(rows: HoldingComparison[]): string {
       row.previousRank,
       row.rankChange,
     ]),
-  );
-}
-
-export function buildHistoricalHoldingsCsv(snapshots: Snapshot[]): string {
-  return toCsv(
-    ['date', 'stockCode', 'stockName', 'shares', 'weight'],
-    snapshots.flatMap((snapshot) =>
-      snapshot.holdings.map((holding) => [
-        snapshot.date,
-        holding.stockCode,
-        holding.stockName,
-        holding.shares,
-        holding.weight,
-      ]),
-    ),
   );
 }
 

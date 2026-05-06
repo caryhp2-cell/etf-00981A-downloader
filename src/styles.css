@@ -17,11 +17,13 @@ body {
 
 button,
 input,
-select {
+select,
+.download-button {
   font: inherit;
 }
 
-button {
+button,
+.download-button {
   align-items: center;
   background: #111827;
   border: 0;
@@ -32,6 +34,7 @@ button {
   gap: 8px;
   min-height: 38px;
   padding: 8px 12px;
+  text-decoration: none;
 }
 
 input,
@@ -214,6 +217,7 @@ td:nth-child(3) {
 @media (max-width: 560px) {
   .header-actions,
   .header-actions button,
+  .header-actions .download-button,
   .table-controls,
   .table-controls input,
   .table-controls select {

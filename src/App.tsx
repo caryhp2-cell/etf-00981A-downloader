@@ -70,6 +70,7 @@ export default function App() {
       <DashboardHeader
         latestDate={viewModel.latest?.date ?? null}
         generatedAt={dataset.generatedAt}
+        downloadsZipHref={`${import.meta.env.BASE_URL}downloads/00981A-downloads.zip`}
       />
       <ChangeSummary latestChange={viewModel.latestChange} />
       <HoldingsTable rows={viewModel.latestRows} />

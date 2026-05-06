@@ -36,6 +36,7 @@ python 00981A.py
 ### Holdings Dashboard
 
 React dashboard 會分析 `downloads/` 裡的 Excel 持股資料。資料來源不是 GitHub tree 頁面，而是由本 repo 產生並 commit 的 `public/data/holdings.json`。
+dashboard 也會在部署時將 `downloads/` 下所有 `.xlsx` 原始檔打包成 `00981A-downloads.zip`，供使用者直接下載 Excel 原檔。
 
 安裝前端相依套件：
 
