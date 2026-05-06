@@ -5,13 +5,24 @@ type VitestUserConfig = UserConfig & {
   test: {
     environment: 'jsdom';
     globals: boolean;
+    include: string[];
   };
 };
 
 const config: VitestUserConfig = {
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          charts: ['recharts'],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
+    include: ['src/**/*.test.ts'],
     globals: true,
   },
 };

@@ -4,6 +4,10 @@ __pycache__/
 .venv/
 venv/
 node_modules/
+dist/
+*.tsbuildinfo
+vite.config.d.ts
+vite.config.js
 .env
 .DS_Store
 # 暫存的瀏覽器下載
