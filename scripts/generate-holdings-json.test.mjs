@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   findHoldingsHeader,
+  normalizeWorkbookRows,
   parseA1Date,
   parseFileDate,
   parseHoldingRow,
   parseNumber,
+  parseSnapshot,
 } from './generate-holdings-json.mjs';
 
 test('parseFileDate extracts valid 00981A filename date', () => {
@@ -26,6 +28,12 @@ test('parseNumber handles NTD, commas, percents, and numbers', () => {
   assert.equal(parseNumber(''), null);
 });
 
+test('normalizeWorkbookRows unwraps read-excel-file sheet data', () => {
+  const rows = [['資料日期：115/05/05']];
+  assert.equal(normalizeWorkbookRows([{ sheet: '基金投資組合', data: rows }]), rows);
+  assert.equal(normalizeWorkbookRows(rows), rows);
+});
+
 test('findHoldingsHeader locates expected holdings columns', () => {
   const rows = [
     ['資料日期：115/05/05'],
@@ -42,4 +50,42 @@ test('parseHoldingRow returns normalized holding values', () => {
     shares: 1234000,
     weight: 12.34,
   });
+});
+
+const validRows = [
+  ['資料日期：115/05/05'],
+  [],
+  ['基金資產'],
+  ['淨資產', 'NTD 260,747,573,102'],
+  ['流通在外單位數', '8,878,209,000'],
+  ['每單位淨值', 'NTD 29.37'],
+  [],
+  ['項目', '金額', '權重'],
+  ['期貨(名目本金)', 'NTD 0', '0%'],
+  ['股票', 'NTD 243,727,535,400', '93.47%'],
+  [],
+  ['項目', '金額', '權重'],
+  ['現金', 'NTD 8,864,127,271', '3.40%'],
+  ['期貨保證金', 'NTD 500,128,241', '0.19%'],
+  ['申贖應付款', 'NTD -604,269,282', '-0.23%'],
+  ['應收付證券款', 'NTD -4,961,221,969', '-1.90%'],
+  [],
+  [],
+  ['股票'],
+  ['股票代號', '股票名稱', '股數', '持股權重'],
+  ['2330', '台積電', '1,000,000', '12.34%'],
+];
+
+test('parseSnapshot accepts matching filename and A1 dates', () => {
+  const result = parseSnapshot('00981A_2026-05-05.xlsx', validRows);
+  assert.equal(result.excluded, null);
+  assert.equal(result.validFile.fileDate, '2026-05-05');
+  assert.equal(result.snapshot.holdings[0].stockCode, '2330');
+  assert.equal(result.snapshot.fundAssets.navPerUnit, 29.37);
+});
+
+test('parseSnapshot excludes mismatched filename and A1 dates', () => {
+  const result = parseSnapshot('00981A_2026-05-02.xlsx', validRows);
+  assert.equal(result.snapshot, null);
+  assert.equal(result.excluded.reason, 'filename date 2026-05-02 != A1 date 2026-05-05');
 });
