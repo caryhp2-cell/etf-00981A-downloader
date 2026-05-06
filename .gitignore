@@ -9,3 +9,4 @@ venv/
 downloads/*.crdownload
 # 程式執行紀錄
 logs/
+.superpowers/
